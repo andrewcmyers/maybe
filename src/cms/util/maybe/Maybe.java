@@ -1,5 +1,7 @@
 package cms.util.maybe;
 
+import cms.util.UnsafeUtils;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Optional;
@@ -52,7 +54,7 @@ public abstract class Maybe<T> implements Set<T> {
      * @return the {@code Maybe} returned by {@code f}, if a value is contained in this
      *         {@code Maybe}. Otherwise, an empty {@code Maybe}.
      */
-    public abstract <U> Maybe<U> thenMaybe(Function<T, Maybe<U>> f);
+    public abstract <U> Maybe<U> thenMaybe(Function<? super T, ? extends Maybe<? extends U>> f);
 
     /** If a value {@code v} is present, returns a {@code Maybe} containing {@code f(v)}, which must be non-null.
      *  Otherwise, returns an empty {@code Maybe}. (This is a monadic bind composed with a monadic unit.)
@@ -71,8 +73,8 @@ public abstract class Maybe<T> implements Set<T> {
      * @return a {@code Maybe} containing the value {@code f}, if a value is contained in this
      *         {@code Maybe}. Otherwise, an empty {@code Maybe}.
      */
-    public abstract <U> Maybe<U> then(Function<T, U> f);
-    
+    public abstract <U> Maybe<U> then(Function<? super T, ? extends U> f);
+
     /** Returns the contained value, if any; otherwise, returns {@code other}.
      *  Note: since orElse is an ordinary method call, its argument is always computed,
      *  unlike a Java {@code else} statement. If the argument is
@@ -88,7 +90,7 @@ public abstract class Maybe<T> implements Set<T> {
      *  @param other The function to use when this {@code Maybe} is empty.
      *  @return the contained value or {@code other.get()}.
      */
-    public abstract T orElseGet(Supplier<T> other);
+    public abstract T orElseGet(Supplier<? extends T> other);
 
     /** Returns the contained value, if any; otherwise, throws the specified exception. */
     public abstract <E extends Throwable> T orElseThrow(E throwable) throws E;
@@ -97,15 +99,15 @@ public abstract class Maybe<T> implements Set<T> {
      *  @param other The function to use when this {@code Maybe} is empty.
      *  @return this or {@code other.get()}.
      */
-    public abstract Maybe<T> orElseMaybe(Supplier<Maybe<T>> other);
-    
+    public abstract Maybe<T> orElseMaybe(Supplier<? extends Maybe<? extends T>> other);
+
     /** Call {@code cons} on the contained value, if any.
      *  @param cons The function to send the contained value to.
      */
-    public abstract void thenDo(Consumer<T> cons);
+    public abstract void thenDo(Consumer<? super T> cons);
 
     /** If a value is contained, run consThen on the value; otherwise run procElse */
-    public abstract void thenElse(Consumer<T> consThen, Runnable procElse);
+    public abstract void thenElse(Consumer<? super T> consThen, Runnable procElse);
 
     /** Provide an iterator that yields either one {@code T} or none, depending. */
     public abstract Iterator<T> iterator();
@@ -133,11 +135,11 @@ public abstract class Maybe<T> implements Set<T> {
     /**
      * Create a {@code Maybe} from an {@code Optional} value.
      * @param optional The {@code Optional} value.
-     * @param <T> The type of the value inside the {@code Optional}.
+     * @param <T> The type of the {@code Maybe} to be created.
      * @return If the {@code Optional} contains a value, then Some of that value, otherwise None.
      */
-    public static <T> Maybe<T> fromOptional(Optional<T> optional) {
-        return optional.map(Maybe::some).orElseGet(Maybe::none);
+    public static <T> Maybe<T> fromOptional(Optional<? extends T> optional) {
+        return Maybe.cast(optional.map(Maybe::some).orElseGet(Maybe::none));
     }
     /**
      * Create an {@code Optional} from a {@code Maybe}
@@ -152,9 +154,55 @@ public abstract class Maybe<T> implements Set<T> {
      *  @return The value in the optional, if any
      *  @throws NoMaybeValue if no value is present.
      */
-    public static <T> T getOptional(Optional<T> optional) throws NoMaybeValue {
+    public static <T> T getOptional(Optional<? extends T> optional) throws NoMaybeValue {
         if (optional.isPresent()) return optional.get();
         else throw NoMaybeValue.theException;
+    }
+
+    /**
+     * Create a {@link Maybe} from the result of a computation,
+     * returning {@code Maybes.None} if the computation returns null
+     * or throws a particular exception.
+     * Note that this method only catches the specified exception.
+     * If the computation throws any other exception, it is propagated.
+     * <p>
+     * As an example, the following code:<br>
+     * <pre>
+     * {@code
+     * Maybe<Float> oldScoreClient;
+     * try {
+     *     oldScoreClient = Maybe.some(Float.parseFloat(vals[5]));
+     * } catch (NumberFormatException e) {
+     *     oldScoreClient = Maybe.none();
+     * }}
+     * </pre>
+     * could be rewritten as:<br>
+     * <pre>
+     * {@code final Maybe<Float> oldScoreClient = Maybe.fromCatching(() -> Float.parseFloat(vals[5]), NumberFormatException.class)}
+     * </pre>
+     * @param valueOrThrow a computation, represented by a {@link ThrowingSupplier} that either
+     *                     returns a value to store in this maybe or throws an exception.
+     * @param exnClass the exception that {@code valueOrThrow} might throw.
+     * @return a {@code Maybes.Some} instance containing the result of {@code valueOrThrow},
+     *         or {@code Maybes.None} if the {@code valueOrThrow} throws.
+     * @param <T> the type parameter of the resulting {@link Maybe}
+     * @param <E> the type of the exception being caught
+     */
+    public static <T, E extends Throwable> Maybe<T> fromCatching(ThrowingSupplier<T, E> valueOrThrow, Class<? super E> exnClass) {
+        try {
+            return from(valueOrThrow.get());
+        } catch (Throwable e) {
+            if (exnClass.isInstance(e)) {
+                return none();
+            } else {
+                UnsafeUtils.unsafeThrowUnchecked(e); // Propagate the exception.
+                                                     // It's not of type E, so it wasn't checked before,
+                                                     // and we don't want to make it checked now.
+                                                     // Must use this unsafe method because the compiler
+                                                     // doesn't know that e is not of type E (which we checked above).
+                throw new IllegalStateException("Impossible to reach this point in the code; unsafeThrowUnchecked always throws");
+            }
+        }
     }
 
     /** Returns an empty {@code Maybe}. */

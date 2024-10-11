@@ -29,7 +29,7 @@ class Maybes {
         }
         
         @Override
-        public T orElseGet(Supplier<T> other) {
+        public T orElseGet(Supplier<? extends T> other) {
             return other.get();
         }
 
@@ -39,21 +39,21 @@ class Maybes {
         }
 
         @Override
-        public <U> Maybe<U> thenMaybe(Function<T, Maybe<U>> f) {
+        public <U> Maybe<U> thenMaybe(Function<? super T, ? extends Maybe<? extends U>> f) {
             return Maybe.none();
         }
 
         @Override
-        public <U> Maybe<U> then(Function<T, U> f) {
+        public <U> Maybe<U> then(Function<? super T, ? extends U> f) {
             return Maybe.none();
         }
 
         @Override
-        public void thenDo(Consumer<T> cons) {
+        public void thenDo(Consumer<? super T> cons) {
         }
 
         @Override
-        public void thenElse(Consumer<T> consThen, Runnable procElse) {
+        public void thenElse(Consumer<? super T> consThen, Runnable procElse) {
             procElse.run();
         }
 
@@ -126,8 +126,8 @@ class Maybes {
         }
 
         @Override
-        public Maybe<T> orElseMaybe(Supplier<Maybe<T>> other) {
-            return other.get();
+        public Maybe<T> orElseMaybe(Supplier<? extends Maybe<? extends T>> other) {
+            return Maybe.cast(other.get());
         }
         
         @Override
@@ -169,7 +169,7 @@ class Maybes {
         }
         
         @Override
-        public T orElseGet(Supplier<T> other) {
+        public T orElseGet(Supplier<? extends T> other) {
             return value;
         }
 
@@ -179,22 +179,22 @@ class Maybes {
         }
 
         @Override
-        public <U> Maybe<U> thenMaybe(Function<T, Maybe<U>> f) {
-            return f.apply(value);
+        public <U> Maybe<U> thenMaybe(Function<? super T, ? extends Maybe<? extends U>> f) {
+            return Maybe.cast(f.apply(value));
         }
 
         @Override
-        public <U> Maybe<U> then(Function<T, U> f) {
+        public <U> Maybe<U> then(Function<? super T, ? extends U> f) {
             return Maybes.some(f.apply(value));
         }
 
         @Override
-        public void thenDo(Consumer<T> cons) {
+        public void thenDo(Consumer<? super T> cons) {
             cons.accept(value);
         }
 
         @Override
-        public void thenElse(Consumer<T> consThen, Runnable procElse) {
+        public void thenElse(Consumer<? super T> consThen, Runnable procElse) {
             consThen.accept(value);
         }
 
@@ -277,7 +277,7 @@ class Maybes {
         }
 
         @Override
-        public Maybe<T> orElseMaybe(Supplier<Maybe<T>> other) {
+        public Maybe<T> orElseMaybe(Supplier<? extends Maybe<? extends T>> other) {
             return this;
         }
         
