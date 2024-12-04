@@ -34,8 +34,8 @@ class Maybes {
         }
 
         @Override
-        public <E extends Throwable> T orElseThrow(E throwable) throws E {
-            throw throwable;
+        public <E extends Throwable> T orElseThrow(Supplier<E> throwable) throws E {
+            throw throwable.get();
         }
 
         @Override
@@ -174,7 +174,7 @@ class Maybes {
         }
 
         @Override
-        public <E extends Throwable> T orElseThrow(E throwable) {
+        public <E extends Throwable> T orElseThrow(Supplier<E> throwable) {
             return value;
         }
 
