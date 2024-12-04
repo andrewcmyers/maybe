@@ -1,2 +1,4 @@
 .*.sw?
 *.class
+src/maybe.zip
+doc
