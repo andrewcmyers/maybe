@@ -92,7 +92,7 @@ public abstract class Maybe<T> implements Set<T> {
      */
     public abstract T orElseGet(Supplier<? extends T> other);
 
-    /** Returns the contained value, if any; otherwise, throws the specified exception. */
+    /** Returns the contained value, if any; otherwise, throws the supplied exception. */
     public abstract <E extends Throwable> T orElseThrow(Supplier<E> throwable) throws E;
     
     /** Returns this if a value is contained; otherwise, returns {@code other.get()}.
