@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /** An object that may contain a value of type {@code T}. Similar to
@@ -75,6 +76,28 @@ public abstract class Maybe<T> implements Set<T> {
      */
     public abstract <U> Maybe<U> then(Function<? super T, ? extends U> f);
 
+    /**
+     * If a value {@code v} is present and {@code v} satisfies {@code condition},
+     * returns a {@code Maybe} containing {@code v}.
+     * If not, returns {@code Maybe.none()}.
+     *
+     * Example:
+     *
+     * <pre>
+     * {@code
+     * var maybeX = some(10);
+     * var maybeY = some(9);
+     *
+     * maybeX.onlyIf(x -> x % 2 == 0); // returns some(10)
+     * maybeY.onlyIf(y -> y % 2 == 0); // returns none
+     * }</pre>
+     *
+     * @param condition the condition to check on the value
+     * @return a {@code Maybe} containing the value contained in this {@code Maybe},
+     *         if one exists and it meets {@code condition.}
+     */
+    public abstract Maybe<T> onlyIf(Predicate<? super T> condition);
+
     /** Returns the contained value, if any; otherwise, returns {@code other}.
      *  Note: since orElse is an ordinary method call, its argument is always computed,
      *  unlike a Java {@code else} statement. If the argument is
@@ -92,9 +115,9 @@ public abstract class Maybe<T> implements Set<T> {
      */
     public abstract T orElseGet(Supplier<? extends T> other);
 
-    /** Returns the contained value, if any; otherwise, throws the supplied exception. */
-    public abstract <E extends Throwable> T orElseThrow(Supplier<E> throwable) throws E;
-    
+    /** Returns the contained value, if any; otherwise, throw the supplied exception. */
+    public abstract <E extends Exception> T orElseThrow(Supplier<E> throwable) throws E;
+
     /** Returns this if a value is contained; otherwise, returns {@code other.get()}.
      *  @param other The function to use when this {@code Maybe} is empty.
      *  @return this or {@code other.get()}.
