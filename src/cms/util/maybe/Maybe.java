@@ -15,128 +15,126 @@ import java.util.function.Supplier;
  *  Java's Optional class but uses a fast checked exception instead of
  *  a slow unchecked exception.
  */
-public abstract class Maybe<T> implements Set<T> {
+@SuppressWarnings ({
+        "OptionalUsedAsFieldOrParameterType", // We want interop with Optionals
+        "unused" // Unused methods may be useful in the future
+})
+public sealed interface Maybe<T> extends Set<T> permits Maybes.None, Maybes.Some {
 
     /** Returns whether a value is contained in this {@code Maybe}.
      *  @return whether a value is contained. */
-    public abstract boolean isPresent();
+    boolean isPresent();
 
-    /** Returns the contained value, if present. Otherwise, throws the exception.
-     * @return the contained value
-     * @throws NoMaybeValue if no value is contained in this Maybe. This method
-     * is primarily useful for writing code that is supposed to perform side
-     * effects, e.g.:
-     * <pre>
-     * Maybe{@code<T>} m = ...
-     * try {
-     *    ... m.get() ...
-     * } catch (NoMaybeValue e) {
-     *    ...
-     * }
-     * </pre>
-     *    
-     */
-    public abstract T get() throws NoMaybeValue;
+    /// Returns the contained value, if present. Otherwise, throws the exception.
+    ///
+    /// This method is primarily useful for writing code that is supposed to
+    /// perform side effects, e.g.:
+    /// ```
+    /// Maybe<T> m = ...
+    /// try {
+    ///     ... m.get() ...
+    /// } catch (NoMaybeValue e) {
+    ///     ...
+    /// }
+    /// ```
+    ///
+    /// @return the contained value
+    /// @throws NoMaybeValue if no value is contained in this Maybe.
+    T get() throws NoMaybeValue;
 
-    /** If a value {@code v} is present, returns {@code f(v)}. Otherwise, returns an empty {@code Maybe}.
-     *  (This is a monadic bind.)
-     *  
-     *  This method is useful for chaining together a series of {@code Maybe} accesses. For
-     *  example, supposing {@code T.foo()} returns a Maybe:
-     * <pre>
-     * {@code
-     * Maybe<T> mt = ...
-     * mt.thenMaybe(t -> t.foo().then(f -> ...))
-     *   .orElse(...)
-     * }</pre>
-     *
-     * @param f The function to be applied to the contained value, if any.
-     * @param <U> The type of the value that may be returned by the function {@code f}.
-     * @return the {@code Maybe} returned by {@code f}, if a value is contained in this
-     *         {@code Maybe}. Otherwise, an empty {@code Maybe}.
-     */
-    public abstract <U> Maybe<U> thenMaybe(Function<? super T, ? extends Maybe<? extends U>> f);
+    /// If a value `v` is present, returns `f(v)`. Otherwise, returns an empty `Maybe`.
+    /// (This is a monadic bind.)
+    ///
+    /// This method is useful for chaining together a series of `Maybe` accesses. For
+    /// example, supposing `T.foo()` returns a Maybe:
+    /// ```
+    /// Maybe<T> mt = ...
+    /// mt.thenMaybe(t -> t.foo().then(f -> ...))
+    ///     .orElse(...)
+    /// ```
+    ///
+    /// @param f The function to be applied to the contained value, if any.
+    /// @param <U> The type of the value that may be returned by the function `f`.
+    /// @return the `Maybe` returned by `f` if a value is contained in this `Maybe`.
+    ///         Otherwise, an empty `Maybe`.
+    <U> Maybe<U> thenMaybe(Function<? super T, ? extends Maybe<? extends U>> f);
 
-    /** If a value {@code v} is present, returns a {@code Maybe} containing {@code f(v)}, which must be non-null.
-     *  Otherwise, returns an empty {@code Maybe}. (This is a monadic bind composed with a monadic unit.)
-     *  This method can be used conveniently along with orElse to handle both
-     *  maybe cases, e.g.:
-     * 
-     * <pre>
-     * {@code
-     * Maybe<T> mt = ...
-     * mt.then(t -> ...)
-     *   .orElse(...)
-     * }</pre>
-     *
-     * @param f The function to be applied to the contained value, if any.
-     * @param <U> The type of the value that may be returned by the function {@code f}.
-     * @return a {@code Maybe} containing the value {@code f}, if a value is contained in this
-     *         {@code Maybe}. Otherwise, an empty {@code Maybe}.
-     */
-    public abstract <U> Maybe<U> then(Function<? super T, ? extends U> f);
+    /// If a value `v` is present, returns a `Maybe` containing `f(v)`, which must be non-null.
+    ///  Otherwise, returns an empty `Maybe`. (This is a monadic bind composed with a monadic unit.)
+    ///
+    ///  This method can be used conveniently along with orElse to handle both
+    ///  maybe cases, e.g.:
+    /// ```
+    /// Maybe<T> mt = ...
+    /// mt.then(t -> ...)
+    ///   .orElse(...)
+    /// ```
+    ///
+    /// @param f The function to be applied to the contained value, if any.
+    /// @param <U> The type of the value that may be returned by the function `f`.
+    /// @return a `Maybe` containing the value `f`, if a value is contained in this
+    ///         `Maybe`. Otherwise, an empty `Maybe`.
+    <U> Maybe<U> then(Function<? super T, ? extends U> f);
 
-    /**
-     * If a value {@code v} is present and {@code v} satisfies {@code condition},
-     * returns a {@code Maybe} containing {@code v}.
-     * If not, returns {@code Maybe.none()}.
-     *
-     * Example:
-     *
-     * <pre>
-     * {@code
-     * var maybeX = some(10);
-     * var maybeY = some(9);
-     *
-     * maybeX.onlyIf(x -> x % 2 == 0); // returns some(10)
-     * maybeY.onlyIf(y -> y % 2 == 0); // returns none
-     * }</pre>
-     *
-     * @param condition the condition to check on the value
-     * @return a {@code Maybe} containing the value contained in this {@code Maybe},
-     *         if one exists and it meets {@code condition.}
-     */
-    public abstract Maybe<T> onlyIf(Predicate<? super T> condition);
+    /// If a value `v` is present and `v` satisfies `condition`,
+    /// returns a `Maybe` containing `v`.
+    /// If not, returns `Maybe.none()`.
+    ///
+    /// Example:
+    /// ```
+    /// var maybeX = some(10);
+    /// var maybeY = some(9);
+    /// maybeX.onlyIf(x -> x % 2 == 0); // returns some(10)
+    /// maybeY.onlyIf(y -> y % 2 == 0); // returns none
+    /// ```
+    ///
+    /// @param condition the condition to check on the value
+    /// @return a `Maybe` containing the value contained in this `Maybe`,
+    ///         if one exists and meets `condition`.
+    Maybe<T> onlyIf(Predicate<? super T> condition);
 
     /** Returns the contained value, if any; otherwise, returns {@code other}.
      *  Note: since orElse is an ordinary method call, its argument is always computed,
      *  unlike a Java {@code else} statement. If the argument is
      *  expensive to compute or has side effects, {@code orElseGet()} should
      *  be used instead.
-     *  
+     *
      *  @param other The value to be returned if no value is in this {@code Maybe}.
      *  @return The contained value, or an empty {@code Maybe}.
      */
-    public abstract T orElse(T other);
+    T orElse(T other);
 
     /** Returns the contained value, if any; otherwise, returns {@code other.get()}.
      *  @param other The function to use when this {@code Maybe} is empty.
      *  @return the contained value or {@code other.get()}.
      */
-    public abstract T orElseGet(Supplier<? extends T> other);
+    T orElseGet(Supplier<? extends T> other);
 
     /** Returns the contained value, if any; otherwise, throw the supplied exception. */
-    public abstract <E extends Exception> T orElseThrow(Supplier<E> throwable) throws E;
+    <E extends Exception> T orElseThrow(Supplier<E> throwable) throws E;
 
     /** Returns this if a value is contained; otherwise, returns {@code other.get()}.
      *  @param other The function to use when this {@code Maybe} is empty.
      *  @return this or {@code other.get()}.
      */
-    public abstract Maybe<T> orElseMaybe(Supplier<? extends Maybe<? extends T>> other);
+    Maybe<T> orElseMaybe(Supplier<? extends Maybe<? extends T>> other);
 
     /** Call {@code cons} on the contained value, if any.
      *  @param cons The function to send the contained value to.
      */
-    public abstract void thenDo(Consumer<? super T> cons);
+    void thenDo(Consumer<? super T> cons);
 
     /** If a value is contained, run consThen on the value; otherwise run procElse */
-    public abstract void thenElse(Consumer<? super T> consThen, Runnable procElse);
+    void thenElse(Consumer<? super T> consThen, Runnable procElse);
 
-    /** Provide an iterator that yields either one {@code T} or none, depending. */
-    public abstract Iterator<T> iterator();
+    /// Provide an iterator that yields either one `T` or none, depending.
+    @SuppressWarnings ("NullableProblems") // IntelliJ complains about lack of `@NotNull`,
+                                           // but we don't use IntelliJ annotations
+    @Override
+    Iterator<T> iterator();
 
     @Override
-    public boolean containsAll(Collection<?> c) {
+    default boolean containsAll(Collection<?> c) {
         for (Object o : c) {
             if (!contains(o)) return false;
         }
@@ -149,7 +147,7 @@ public abstract class Maybe<T> implements Set<T> {
      *  @param v The value to put into a {@code Maybe}, or null.
      *  @param <T> The type of {@code Maybe} to be created.
      */
-    public static <T> Maybe<T> from(T v) {
+    static <T> Maybe<T> from(T v) {
         return (v == null)
                ? none()
                : some(v);
@@ -161,13 +159,13 @@ public abstract class Maybe<T> implements Set<T> {
      * @param <T> The type of the {@code Maybe} to be created.
      * @return If the {@code Optional} contains a value, then Some of that value, otherwise None.
      */
-    public static <T> Maybe<T> fromOptional(Optional<? extends T> optional) {
+    static <T> Maybe<T> fromOptional(Optional<? extends T> optional) {
         return Maybe.cast(optional.map(Maybe::some).orElseGet(Maybe::none));
     }
     /**
      * Create an {@code Optional} from a {@code Maybe}
      */
-    public Optional<T> toOptional() {
+    default Optional<T> toOptional() {
         return then(Optional::of).orElse(Optional.empty());
     }
 
@@ -177,7 +175,7 @@ public abstract class Maybe<T> implements Set<T> {
      *  @return The value in the optional, if any
      *  @throws NoMaybeValue if no value is present.
      */
-    public static <T> T getOptional(Optional<? extends T> optional) throws NoMaybeValue {
+    static <T> T getOptional(Optional<? extends T> optional) throws NoMaybeValue {
         if (optional.isPresent()) return optional.get();
         else throw NoMaybeValue.theException;
     }
@@ -211,7 +209,7 @@ public abstract class Maybe<T> implements Set<T> {
      * @param <T> the type parameter of the resulting {@link Maybe}
      * @param <E> the type of the exception being caught
      */
-    public static <T, E extends Throwable> Maybe<T> fromCatching(ThrowingSupplier<T, E> valueOrThrow, Class<? super E> exnClass) {
+    static <T, E extends Throwable> Maybe<T> fromCatching(ThrowingSupplier<T, E> valueOrThrow, Class<? super E> exnClass) {
         try {
             return from(valueOrThrow.get());
         } catch (Throwable e) {
@@ -229,7 +227,7 @@ public abstract class Maybe<T> implements Set<T> {
     }
 
     /** Returns an empty {@code Maybe}. */
-    public static <T> Maybe<T> none() {
+    static <T> Maybe<T> none() {
         return Maybes.none();
     }
 
@@ -237,16 +235,16 @@ public abstract class Maybe<T> implements Set<T> {
      * @param v must be non-null
      * @throws IllegalArgumentException if a null value is passed to it.
      */
-    public static <T> Maybe<T> some(T v) {
+    static <T> Maybe<T> some(T v) {
         return Maybes.some(v);
     }
-    
+
     /** Convert a {@code Maybe<U>} to a {@code Maybe<T>}, when {@code T}
      *  is a supertype of {@code U}. This covariant subtyping is safe because
      *  {@code Maybe}s are immutable.
      */
     @SuppressWarnings("unchecked")
-    public static <T,U extends T> Maybe<T> cast(Maybe<U> in) {
-      return (Maybe<T>)in;
+    static <T, U extends T> Maybe<T> cast(Maybe<U> in) {
+        return (Maybe<T>) in;
     }
 }

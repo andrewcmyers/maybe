@@ -1,18 +1,20 @@
 package cms.util.maybe;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-class Maybes {
+@SuppressWarnings ("NullableProblems") // IntelliJ complains about lack of `@NotNull`,
+                                       // but we don't use IntelliJ annotations
+public class Maybes {
 
     @SuppressWarnings("rawtypes")
     private static final None theNone = new None();
 
-    private static class None<T> extends Maybe<T> {
+    public record None<T>() implements Maybe<T> {
+
         @Override
         public boolean isPresent() {
             return false;
@@ -34,7 +36,7 @@ class Maybes {
         }
 
         @Override
-        public <E extends Throwable> T orElseThrow(Supplier<E> throwable) throws E {
+        public <E extends Exception> T orElseThrow(Supplier<E> throwable) throws E {
             throw throwable.get();
         }
 
@@ -58,6 +60,11 @@ class Maybes {
         }
 
         @Override
+        public Maybe<T> onlyIf(Predicate<? super T> condition) {
+            return Maybes.none();
+        }
+
+        @Override
         public Iterator<T> iterator() {
             return new Iterator<>() {
                 public T next() { throw new NoSuchElementException(); }
@@ -72,7 +79,8 @@ class Maybes {
 
         @Override
         public <T1> T1[] toArray(T1[] a) {
-            return null;
+            Arrays.fill(a, null); // See spec of toArray in Set
+            return a;
         }
 
         @Override
@@ -141,18 +149,7 @@ class Maybes {
         }
     }
 
-    private static class Some<T> extends Maybe<T> {
-        private final T value;
-
-        /**
-         * Should only be called in Maybes.some.
-         *
-         * @param v Must not be null
-         */
-        Some(T v) {
-            value = v;
-        }
-
+    public record Some<T>(T value) implements Maybe<T> {
         @Override
         public boolean isPresent() {
             return true;
@@ -174,7 +171,7 @@ class Maybes {
         }
 
         @Override
-        public <E extends Throwable> T orElseThrow(Supplier<E> throwable) {
+        public <E extends Exception> T orElseThrow(Supplier<E> throwable) {
             return value;
         }
 
@@ -199,6 +196,15 @@ class Maybes {
         }
 
         @Override
+        public Maybe<T> onlyIf(Predicate<? super T> condition) {
+            if (condition.test(value)) {
+                return this;
+            } else {
+                return Maybes.none();
+            }
+        }
+
+        @Override
         public Iterator<T> iterator() {
             return new Iterator<>() {
                 boolean yielded = false;
@@ -220,7 +226,9 @@ class Maybes {
 
         @Override
         public <T1> T1[] toArray(T1[] a) {
-            return null;
+            List<T> list = new ArrayList<>(1);
+            list.add(value);
+            return list.toArray(a);
         }
 
         @Override
@@ -284,17 +292,6 @@ class Maybes {
         @Override
         public String toString() {
             return value.toString();
-        }
-        
-        @Override
-        public boolean equals(Object o) {
-            return ((o instanceof Some<?>)
-                && value.equals(((Some<?>)o).value));
-        }
-        
-        @Override
-        public int hashCode() {
-            return value.hashCode();
         }
     }
 
