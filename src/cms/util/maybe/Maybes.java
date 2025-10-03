@@ -13,7 +13,7 @@ public class Maybes {
     @SuppressWarnings("rawtypes")
     private static final None theNone = new None();
 
-    public record None<T>() implements Maybe<T> {
+    public static final class None<T> implements Maybe<T> {
 
         @Override
         public boolean isPresent() {
