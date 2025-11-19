@@ -1,0 +1,31 @@
+name: Publish Javadoc
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  runs-on: ubuntu-latest
+  deploy:
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '23'
+
+      - name: Build Javadoc
+        run: mvn clean install javadoc:javadoc
+
+      - name: Deploy Javadoc to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/site/apidocs
+          publish_branch: gh-pages
+          destination_dir: javadoc
+
