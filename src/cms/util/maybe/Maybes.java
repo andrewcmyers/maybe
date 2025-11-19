@@ -14,6 +14,8 @@ public class Maybes {
     private static final None theNone = new None();
 
     public static final class None<T> implements Maybe<T> {
+        private None() { // Use Maybe.none() instead
+        }
 
         @Override
         public boolean isPresent() {
