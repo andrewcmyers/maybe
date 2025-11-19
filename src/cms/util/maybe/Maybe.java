@@ -11,10 +11,16 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-/** An object that may contain a value of type {@code T}. Similar to
- *  Java's Optional class but uses a fast checked exception instead of
- *  a slow unchecked exception.
- */
+/// An object that may contain a value of type {@code T}. Similar to
+/// Java's Optional class but uses a fast checked exception instead of
+/// a slow unchecked exception. It can also act like a {@code Set<T>}
+/// containing at most one element. It has exactly two implementations,
+/// {@code None} and {@code Some}. There are several ways to condition behavior
+/// on which kind of Maybe one has, including:
+///    - Call `get()` and handling the fast `NoMaybeValue` exception.
+///    - The monadic methods `then`/`thenMaybe`/`else`/`elseGet` avoid exceptions.
+///    - An enhanced `for`-loop over the Maybe, which does nothing on empty Maybes.
+///    - Pattern-matching against {@code Some(T value)}.
 @SuppressWarnings ({
         "OptionalUsedAsFieldOrParameterType", // We want interop with Optionals
         "unused" // Unused methods may be useful in the future
@@ -163,7 +169,8 @@ public sealed interface Maybe<T> extends Set<T> permits Maybes.None, Maybes.Some
         return Maybe.cast(optional.map(Maybe::some).orElseGet(Maybe::none));
     }
     /**
-     * Create an {@code Optional} from a {@code Maybe}
+     * Create an {@code Optional} from a {@code Maybe}, which is useful
+     * when a stream is needed.
      */
     default Optional<T> toOptional() {
         return then(Optional::of).orElse(Optional.empty());

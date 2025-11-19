@@ -1,5 +1,6 @@
 package cms.util;
 
+/** Unsafe utilities not intended for general use. */
 public class UnsafeUtils {
     /**
      * Throws a (potentially checked) {@link Throwable} without checking it.

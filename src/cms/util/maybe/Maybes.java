@@ -6,6 +6,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+/** Implementations of the interface {@code Maybe<T>}.
+ */
 @SuppressWarnings ("NullableProblems") // IntelliJ complains about lack of `@NotNull`,
                                        // but we don't use IntelliJ annotations
 public class Maybes {
@@ -13,6 +15,9 @@ public class Maybes {
     @SuppressWarnings("rawtypes")
     private static final None theNone = new None();
 
+    /** Representation of an empty Maybe. It should be created using the
+     * method {@code Maybe.none()}.
+     */
     public static final class None<T> implements Maybe<T> {
         private None() { // Use Maybe.none() instead
         }
@@ -151,6 +156,11 @@ public class Maybes {
         }
     }
 
+    /** Representation of a Maybe containing a value of type {@code T}.
+     * <p>
+     * It can conveniently used for pattern-matching discrimination,
+     * e.g., {@code if (m instanceof Some(T value)) { ... }}
+     */
     public record Some<T>(T value) implements Maybe<T> {
         @Override
         public boolean isPresent() {

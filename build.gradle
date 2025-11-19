@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+}
+
+// Set up jar task
+jar {
+    dependsOn compileJava
+    from sourceSets.main.output
+}
+
+// Include all source directories
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/cms/util', 'src/cms/util/maybe']
+        }
+    }
+}
+
+// Enable preview features
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ["--enable-preview"]
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(23)
+    }
+}
+
+task generateJavadoc(type: Javadoc) {
+    source = sourceSets.main.allJava
+    classpath = sourceSets.main.compileClasspath
+    destinationDir = file("${buildDir}/docs/javadoc")
+    options.links("https://docs.oracle.com/en/java/javase/23/docs/api/");
+}
