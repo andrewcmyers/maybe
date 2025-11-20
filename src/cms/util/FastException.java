@@ -1,7 +1,7 @@
 package cms.util;
 
 /**
- * Exceptions that extend this class will be logged differently to regular exceptions.
+ * Exceptions that extend this class will be logged differently than regular exceptions.
  */
 public abstract class FastException extends Exception {
     protected FastException() {}
@@ -13,8 +13,8 @@ public abstract class FastException extends Exception {
         return (FastException) e.customFillInStackTrace();
     }
 
-    /**
-     * There is no meaningful stack trace for this exception because it is supposed to always be handled.
+    /** There is no meaningful stack trace for this exception because it is
+     * supposed to always be handled.
      */
     @Override
     public synchronized Throwable fillInStackTrace() {
