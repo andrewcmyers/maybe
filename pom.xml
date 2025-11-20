@@ -17,6 +17,7 @@
   </properties>
 
   <build>
+    <sourceDirectory>src</sourceDirectory>
     <plugins>
       <!-- Optional: enforce javadoc linting -->
       <plugin>

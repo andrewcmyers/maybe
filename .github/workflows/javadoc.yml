@@ -20,7 +20,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Build Javadoc
-        run: mvn -B -Dskiptests clean install javadoc:javadoc
+        run: mvn -B -DskipTests clean install javadoc:javadoc
 
 
       - name: Prepare Pages artifact
