@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout
+        uses: actions/checkout@v4
 
       - name: Set up JDK
-        uses: actions/setup-java
+        uses: actions/setup-java@v4
         with:
           java-version: '23'
           distribution: 'temurin'
@@ -29,7 +29,7 @@ jobs:
           cp -r target/site/apidocs/* _site/
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact
+        uses: actions/upload-pages-artifact@v4
         with:
           path: _site
 
@@ -42,4 +42,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages
+        uses: actions/deploy-pages@v4
