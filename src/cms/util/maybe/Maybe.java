@@ -6,10 +6,14 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.NoSuchElementException;
 
 /// An object that may contain a value of type {@code T}. Similar to
 /// Java's Optional class but uses a fast checked exception instead of
@@ -19,13 +23,15 @@ import java.util.function.Supplier;
 /// on which kind of Maybe one has, including:
 ///    - Call `get()` and handling the fast `NoMaybeValue` exception.
 ///    - The monadic methods `then`/`thenMaybe`/`else`/`elseGet` avoid exceptions.
-///    - An enhanced `for`-loop over the Maybe, which does nothing on empty Maybes.
+///    - An enhanced `for`-loop over the Maybe, which does nothing on empty Maybe.
 ///    - Pattern-matching against {@code Some(T value)}.
 @SuppressWarnings ({
         "OptionalUsedAsFieldOrParameterType", // We want interop with Optionals
+        "NullableProblems",                   // IntelliJ complains about lack of `@NotNull`,
+                                              // but we don't use IntelliJ annotations
         "unused" // Unused methods may be useful in the future
 })
-public sealed interface Maybe<T> extends Set<T> permits Maybes.None, Maybes.Some {
+public sealed interface Maybe<T> extends Set<T> permits Maybe.None, Maybe.Some {
 
     /** Returns whether a value is contained in this {@code Maybe}.
      *  @return whether a value is contained. */
@@ -178,7 +184,7 @@ public sealed interface Maybe<T> extends Set<T> permits Maybes.None, Maybes.Some
 
     /** Get the value in an {@code Optional}, if present; otherwise
      *  throw the checked exception {@code NoMaybeValue}. This
-     *  method allows {@code Optional}s to be used as if they were Maybes.
+     *  method allows {@code Optional}s to be used as if they were Maybe.
      *  @return The value in the optional, if any
      *  @throws NoMaybeValue if no value is present.
      */
@@ -189,7 +195,7 @@ public sealed interface Maybe<T> extends Set<T> permits Maybes.None, Maybes.Some
 
     /**
      * Create a {@link Maybe} from the result of a computation,
-     * returning {@code Maybes.None} if the computation returns null
+     * returning {@code Maybe.None} if the computation returns null
      * or throws a particular exception.
      * Note that this method only catches the specified exception.
      * If the computation throws any other exception, it is propagated.
@@ -211,8 +217,8 @@ public sealed interface Maybe<T> extends Set<T> permits Maybes.None, Maybes.Some
      * @param valueOrThrow a computation, represented by a {@link ThrowingSupplier} that either
      *                     returns a value to store in this maybe or throws an exception.
      * @param exnClass the exception that {@code valueOrThrow} might throw.
-     * @return a {@code Maybes.Some} instance containing the result of {@code valueOrThrow},
-     *         or {@code Maybes.None} if the {@code valueOrThrow} throws.
+     * @return a {@code Maybe.Some} instance containing the result of {@code valueOrThrow},
+     *         or {@code Maybe.None} if the {@code valueOrThrow} throws.
      * @param <T> the type parameter of the resulting {@link Maybe}
      * @param <E> the type of the exception being caught
      */
@@ -234,16 +240,9 @@ public sealed interface Maybe<T> extends Set<T> permits Maybes.None, Maybes.Some
     }
 
     /** Returns an empty {@code Maybe}. */
+    @SuppressWarnings ("unchecked")
     static <T> Maybe<T> none() {
-        return Maybes.none();
-    }
-
-    /** Creates a {@code Maybe} from a non-null argument.
-     * @param v must be non-null
-     * @throws IllegalArgumentException if a null value is passed to it.
-     */
-    static <T> Maybe<T> some(T v) {
-        return Maybes.some(v);
+        return (Maybe<T>) None.theNone;
     }
 
     /** Convert a {@code Maybe<U>} to a {@code Maybe<T>}, when {@code T}
@@ -253,5 +252,311 @@ public sealed interface Maybe<T> extends Set<T> permits Maybes.None, Maybes.Some
     @SuppressWarnings("unchecked")
     static <T, U extends T> Maybe<T> cast(Maybe<U> in) {
         return (Maybe<T>) in;
+    }
+
+    /** Representation of an empty Maybe. It should be created using the
+     * method {@code Maybe.none()}.
+     */
+    public static final class None<T> implements Maybe<T> {
+        private None() { // Use Maybe.none() instead
+        }
+
+        @SuppressWarnings("rawtypes")
+        private static final None theNone = new None();
+
+        @Override
+        public boolean isPresent() {
+            return false;
+        }
+
+        @Override
+        public T get() throws NoMaybeValue {
+            throw NoMaybeValue.theException;
+        }
+
+        @Override
+        public T orElse(T other) {
+            return other;
+        }
+        
+        @Override
+        public T orElseGet(Supplier<? extends T> other) {
+            return other.get();
+        }
+
+        @Override
+        public <E extends Exception> T orElseThrow(Supplier<E> throwable) throws E {
+            throw throwable.get();
+        }
+
+        @Override
+        public <U> Maybe<U> thenMaybe(Function<? super T, ? extends Maybe<? extends U>> f) {
+            return Maybe.none();
+        }
+
+        @Override
+        public <U> Maybe<U> then(Function<? super T, ? extends U> f) {
+            return Maybe.none();
+        }
+
+        @Override
+        public void thenDo(Consumer<? super T> cons) {
+        }
+
+        @Override
+        public void thenElse(Consumer<? super T> consThen, Runnable procElse) {
+            procElse.run();
+        }
+
+        @Override
+        public Maybe<T> onlyIf(Predicate<? super T> condition) {
+            return Maybe.none();
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            return new Iterator<>() {
+                public T next() { throw new NoSuchElementException(); }
+                public boolean hasNext() { return false; }
+            };
+        }
+
+        @Override
+        public Object[] toArray() {
+            return new Object[0];
+        }
+
+        @Override
+        public <T1> T1[] toArray(T1[] a) {
+            Arrays.fill(a, null); // See spec of toArray in Set
+            return a;
+        }
+
+        @Override
+        public boolean add(T t) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean containsAll(Collection<?> c) {
+            return false;
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends T> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean retainAll(Collection<?> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean removeAll(Collection<?> c) {
+            return false;
+        }
+
+        @Override
+        public void clear() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int size() {
+            return 0;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return true;
+        }
+
+        @Override
+        public boolean contains(Object elem) {
+            return false;
+        }
+
+        @Override
+        public Maybe<T> orElseMaybe(Supplier<? extends Maybe<? extends T>> other) {
+            return Maybe.cast(other.get());
+        }
+        
+        @Override
+        public String toString() {
+            return "none";
+        }
+        
+        @Override
+        public int hashCode() {
+            return 0;
+        }
+    }
+
+    /** Representation of a Maybe containing a value of type {@code T}.
+     * <p>
+     * It can conveniently used for pattern-matching discrimination,
+     * e.g., {@code if (m instanceof Some(T value)) { ... }}
+     */
+    public record Some<T>(T value) implements Maybe<T> {
+        @Override
+        public boolean isPresent() {
+            return true;
+        }
+
+        @Override
+        public T get() {
+            return value;
+        }
+        
+        @Override
+        public T orElse(T other) {
+            return value;
+        }
+        
+        @Override
+        public T orElseGet(Supplier<? extends T> other) {
+            return value;
+        }
+
+        @Override
+        public <E extends Exception> T orElseThrow(Supplier<E> throwable) {
+            return value;
+        }
+
+        @Override
+        public <U> Maybe<U> thenMaybe(Function<? super T, ? extends Maybe<? extends U>> f) {
+            return Maybe.cast(f.apply(value));
+        }
+
+        @Override
+        public <U> Maybe<U> then(Function<? super T, ? extends U> f) {
+            return Maybe.some(f.apply(value));
+        }
+
+        @Override
+        public void thenDo(Consumer<? super T> cons) {
+            cons.accept(value);
+        }
+
+        @Override
+        public void thenElse(Consumer<? super T> consThen, Runnable procElse) {
+            consThen.accept(value);
+        }
+
+        @Override
+        public Maybe<T> onlyIf(Predicate<? super T> condition) {
+            if (condition.test(value)) {
+                return this;
+            } else {
+                return Maybe.none();
+            }
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            return new Iterator<>() {
+                boolean yielded = false;
+                public T next() {
+                    if (yielded) throw new NoSuchElementException();
+                    yielded = true;
+                    return value;
+                }
+                public boolean hasNext() {
+                    return !yielded;
+                }
+            };
+        }
+
+        @Override
+        public Object[] toArray() {
+            return new Object[0];
+        }
+
+        @Override
+        public <T1> T1[] toArray(T1[] a) {
+            List<T> list = new ArrayList<>(1);
+            list.add(value);
+            return list.toArray(a);
+        }
+
+        @Override
+        public boolean add(T t) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean containsAll(Collection<?> c) {
+            for (Object o : c) {
+                if (!contains(o)) return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends T> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean retainAll(Collection<?> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean removeAll(Collection<?> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void clear() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int size() {
+            return 1;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
+        public boolean contains(Object elem) {
+            return value.equals(elem);
+        }
+
+        @Override
+        public Maybe<T> orElseMaybe(Supplier<? extends Maybe<? extends T>> other) {
+            return this;
+        }
+        
+        @Override
+        public String toString() {
+            return value.toString();
+        }
+    }
+
+    /** Creates a Maybe from a non-null argument.
+     * @param v must be non-null
+     * @throws IllegalArgumentException if a null value is passed to it.
+     */
+    static <T> Maybe<T> some(T v) {
+        if (v == null) {
+            throw new IllegalArgumentException("Maybe.some() requires a non-null argument");
+        }
+        return new Maybe.Some<>(v);
     }
 }
