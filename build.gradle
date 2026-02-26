@@ -32,7 +32,7 @@ tasks.withType(JavaCompile) {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(23)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -40,5 +40,5 @@ task generateJavadoc(type: Javadoc) {
     source = sourceSets.main.allJava
     classpath = sourceSets.main.compileClasspath
     destinationDir = file("${buildDir}/docs/javadoc")
-    options.links("https://docs.oracle.com/en/java/javase/23/docs/api/");
+    options.links("https://docs.oracle.com/en/java/javase/25/docs/api/");
 }
